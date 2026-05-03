@@ -4,12 +4,43 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
-    <title>About</title>
+    <title>About — Site Builder</title>
     <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/assets/css/styles.css">
   </head>
   <body>
-    <h1>About</h1>
-    <p><a href="/">Back home</a></p>
+    <nav><a href="/">← Home</a></nav>
+
+    <h1>About Site Builder</h1>
+
+    <p>
+      Site Builder automates the creation of new websites. Give it a project name and
+      a short description — it takes care of everything else and hands you back a live URL.
+    </p>
+
+    <h2>What happens when you submit</h2>
+    <ol>
+      <li>A new GitHub repository is created from a standard template.</li>
+      <li>A Cloudflare Pages project is created and linked to that repository.</li>
+      <li>Claude Code reads your description and writes the initial site content, then commits and pushes it.</li>
+      <li>Cloudflare Pages detects the push and deploys the site automatically.</li>
+    </ol>
+    <p>
+      Within a couple of minutes your site is live at <code>{project-name}.pages.dev</code>.
+    </p>
+
+    <h2>What you get</h2>
+    <p>
+      A fully deployed static website with AI-generated content based on your description,
+      version-controlled on GitHub, and hosted on Cloudflare Pages — ready for you to
+      continue building with Claude Code.
+    </p>
+
+    <h2>What you need to provide</h2>
+    <ul>
+      <li>A project name (used as the repo name and the subdomain)</li>
+      <li>A paragraph describing what the site is for</li>
+    </ul>
+    <p>That's it.</p>
   </body>
 </html>
