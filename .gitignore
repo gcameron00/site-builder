@@ -11,3 +11,6 @@ build/
 
 # Editor settings
 .vscode/
+
+# Local secrets — never commit
+.dev.vars
