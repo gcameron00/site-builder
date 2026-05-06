@@ -58,7 +58,7 @@ Payload:
 {
   "title": "Initial site build",
   "body": "@claude Please build out this website. The project description is:\n\n{description}\n\nUpdate index.html with a fitting title, headline, and introductory content. Update about/index.html with relevant background. Keep the existing HTML structure and CSS — only change the content.",
-  "labels": ["site-builder"]
+  "labels": ["enhancement"]
 }
 ```
 
@@ -130,4 +130,4 @@ An edge function running on Cloudflare's network. Has access to environment vari
 
 - GitHub secrets require libsodium encryption — the orchestrator needs `libsodium-wrappers` (or equivalent) to encrypt the API key before storing it
 - CF Pages project names follow the pattern: repo name lowercased, non-alphanumeric characters replaced by hyphens
-- The `site-builder` label must exist in the template repo so it copies to new repos automatically — GitHub labels are not template-aware, so either create the label in the template and rely on the template copying it, or have the orchestrator create the label on the new repo before opening the issue
+- The `enhancement` label is used to gate the Claude trigger — it's a GitHub default label present on every new repo, so no label creation is needed in the template or by the orchestrator

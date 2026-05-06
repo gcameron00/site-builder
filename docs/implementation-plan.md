@@ -23,7 +23,6 @@ Build order matters — each phase can be tested independently before the next d
 - [x] Add `.github/workflows/claude.yml` — standard Claude Code action, triggers on issues mentioning `@claude`
 - [ ] Add `.github/workflows/auto-merge.yml` — auto-merges PRs opened by the Claude bot
 - [ ] Restrict issue creation to collaborators (Settings → General → Issues → "Collaborators and members")
-- [ ] Ensure a `site-builder` label exists in the template repo (used by the orchestrator when opening issues)
 
 **Test (manual):**
 1. Create a new repo from the `generic-website` template
