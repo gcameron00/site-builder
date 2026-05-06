@@ -2,7 +2,7 @@
 
 ## Overview
 
-Site-builder is a Cloudflare Pages app. The frontend is a static HTML form. The backend is a Cloudflare Pages Function that acts as an orchestrator, calling the GitHub and Cloudflare APIs in sequence, then triggering a GitHub Action that runs Claude Code to generate the initial site content.
+Site-builder is a Cloudflare Pages app. The frontend is a static HTML form. The backend is a Cloudflare Pages Function (the orchestrator) that calls the GitHub and Cloudflare APIs in sequence to spin up a new site. Claude Code is triggered via a GitHub Issue on the new repo and handles generating the initial content.
 
 ## Request flow
 
@@ -21,7 +21,7 @@ POST /repos/{template_owner}/{template_repo}/generate
 ```
 Payload: `{ "name": "my-project", "private": false }`
 
-The new repo URL will be `github.com/{owner}/my-project`.
+The new repo is created with the template contents including both GitHub Actions workflows.
 
 ### 3. Orchestrator: create Cloudflare Pages project
 
@@ -29,56 +29,105 @@ Calls the Cloudflare API to create a Pages project connected to the new repo:
 ```
 POST /accounts/{account_id}/pages/projects
 ```
-CF needs GitHub OAuth access to the repo. Because the new repo is under the same GitHub account that CF is already connected to, no additional OAuth step is needed.
+Because the new repo is under the same GitHub account that CF is already connected to, no additional OAuth step is needed.
 
 The resulting Pages URL follows the pattern: `my-project.pages.dev`
 
-### 4. Orchestrator: trigger GitHub Action
+### 4. Orchestrator: set ANTHROPIC_API_KEY secret on new repo
 
-Dispatches a `workflow_dispatch` event on the new repo:
+The new repo needs the Anthropic API key to run Claude Code. Secrets don't copy from the template, so the orchestrator sets it explicitly:
+
+1. Fetch the repo's public key:
+   ```
+   GET /repos/{owner}/my-project/actions/public-key
+   ```
+2. Encrypt `ANTHROPIC_API_KEY` using libsodium with the repo's public key
+3. Store the secret:
+   ```
+   PUT /repos/{owner}/my-project/actions/secrets/ANTHROPIC_API_KEY
+   ```
+
+### 5. Orchestrator: create a GitHub issue
+
+Opens an issue on the new repo that triggers Claude Code:
 ```
-POST /repos/{owner}/my-project/actions/workflows/build.yml/dispatches
+POST /repos/{owner}/my-project/issues
 ```
-Payload includes the project description as an input, which the workflow passes to Claude Code.
+Payload:
+```json
+{
+  "title": "Initial site build",
+  "body": "@claude Please build out this website. The project description is:\n\n{description}\n\nUpdate index.html with a fitting title, headline, and introductory content. Update about/index.html with relevant background. Keep the existing HTML structure and CSS — only change the content.",
+  "labels": ["site-builder"]
+}
+```
 
-### 5. GitHub Action runs Claude Code
+### 6. Claude Code processes the issue
 
-The workflow in the template repo:
-- Checks out the new repo
-- Runs `claude` CLI with a prompt constructed from the project description
-- Claude Code updates the site files
-- Commits and pushes the changes
+The `claude.yml` workflow in the repo (copied from the template) is listening for new issues. It:
+- Runs the Claude Code GitHub Action
+- Claude reads the issue, edits the site files
+- Opens a pull request with the changes against main
 
-### 6. Cloudflare Pages auto-deploys
+### 7. Auto-merge merges the PR
 
-The push to the repo triggers a CF Pages build. The site goes live at `my-project.pages.dev`.
+The `auto-merge.yml` workflow triggers when a PR is opened by the Claude bot. It automatically merges the PR into main without requiring manual review.
 
-### 7. Response to user
+### 8. Cloudflare Pages deploys
 
-The orchestrator returns the Pages URL immediately after step 3. The URL is predictable (`{name}.pages.dev`) so there's no need to poll — the site will be live within a minute or two.
+The merge to main triggers a CF Pages build. The site goes live at `my-project.pages.dev`.
+
+### 9. Response to user
+
+The orchestrator returns the Pages URL immediately after step 3 — before Claude Code has run. The URL is predictable (`{name}.pages.dev`). The user is shown the URL with a note that content will appear within a few minutes.
+
+---
+
+## Template repo: `generic-website`
+
+The template repo (`gcameron00/generic-website`) must contain:
+
+| File | Purpose |
+|---|---|
+| `.github/workflows/claude.yml` | Standard Claude Code action — triggers on issues mentioning `@claude` |
+| `.github/workflows/auto-merge.yml` | Auto-merges PRs opened by the Claude bot |
+| `index.html`, `about/index.html`, etc. | Base site files Claude Code will update |
+
+### Security
+The template repo's issue creation is restricted to collaborators only (GitHub Settings → General → Issues). This prevents the Claude bot being triggered by arbitrary users opening issues on newly-created repos.
+
+---
 
 ## Cloudflare Pages Function
 
 Location: `functions/api/create.js`
 
-This is an edge function — it runs on Cloudflare's network, not a traditional server. It has access to environment variables set in the CF Pages dashboard.
+An edge function running on Cloudflare's network. Has access to environment variables set in the CF Pages dashboard.
 
-## Template repo requirements
+**Required environment variables:**
 
-The GitHub template repo must contain a `.github/workflows/build.yml` workflow file that:
-- Accepts a `description` input via `workflow_dispatch`
-- Has `ANTHROPIC_API_KEY` available as a secret
-- Runs the Claude Code CLI with the description
-- Commits and pushes any changes
+| Variable | Purpose |
+|---|---|
+| `GITHUB_TOKEN` | `repo` scope — create repos, set secrets, create issues |
+| `CLOUDFLARE_API_TOKEN` | Pages write — create projects |
+| `CLOUDFLARE_ACCOUNT_ID` | Identifies your CF account |
+| `GITHUB_TEMPLATE_OWNER` | e.g. `gcameron00` |
+| `GITHUB_TEMPLATE_REPO` | e.g. `generic-website` |
+| `ANTHROPIC_API_KEY` | Set as secret on each new repo |
+
+---
 
 ## Error handling
 
-- If the repo name is already taken on GitHub, the API returns a 422 — surface this to the user.
-- CF Pages project names must be unique within your account — same pattern.
-- GitHub Actions can take a few minutes. The UI should make clear the site won't be live instantly.
+- Duplicate repo name → GitHub returns 422 — surface to user as "that name is already taken"
+- Duplicate CF Pages project name → same pattern
+- Secret encryption failure → log and surface; new repo exists but Claude won't trigger
+- Claude Code runs asynchronously — the orchestrator does not wait for it; the UI should communicate that content takes a few minutes to appear
+
+---
 
 ## Known constraints
 
-- CF Pages project names are derived from the GitHub repo name, lowercased, with non-alphanumeric characters replaced by hyphens.
-- The `workflow_dispatch` trigger requires the workflow file to already exist on the default branch of the new repo — which it will, since it comes from the template.
-- Claude Code in a GitHub Action requires the `claude` npm package and an `ANTHROPIC_API_KEY` secret.
+- GitHub secrets require libsodium encryption — the orchestrator needs `libsodium-wrappers` (or equivalent) to encrypt the API key before storing it
+- CF Pages project names follow the pattern: repo name lowercased, non-alphanumeric characters replaced by hyphens
+- The `site-builder` label must exist in the template repo so it copies to new repos automatically — GitHub labels are not template-aware, so either create the label in the template and rely on the template copying it, or have the orchestrator create the label on the new repo before opening the issue
