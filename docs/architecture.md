@@ -33,19 +33,25 @@ Because the new repo is under the same GitHub account that CF is already connect
 
 The resulting Pages URL follows the pattern: `my-project.pages.dev`
 
-### 4. Orchestrator: set ANTHROPIC_API_KEY secret on new repo
+### 4. Orchestrator: set secrets on new repo
 
-The new repo needs the Anthropic API key to run Claude Code. Secrets don't copy from the template, so the orchestrator sets it explicitly:
+Secrets don't copy from the template, so the orchestrator sets two secrets explicitly.
 
+For each secret:
 1. Fetch the repo's public key:
    ```
    GET /repos/{owner}/my-project/actions/public-key
    ```
-2. Encrypt `ANTHROPIC_API_KEY` using libsodium with the repo's public key
-3. Store the secret:
+2. Encrypt the value using libsodium with that public key
+3. Store it:
    ```
-   PUT /repos/{owner}/my-project/actions/secrets/ANTHROPIC_API_KEY
+   PUT /repos/{owner}/my-project/actions/secrets/{SECRET_NAME}
    ```
+
+| Secret | Value | Purpose |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | Anthropic API key | Powers Claude Code |
+| `GH_PAT` | Same value as `GITHUB_TOKEN` | Passed to `claude-code-action` so Claude's git push uses a PAT rather than `GITHUB_TOKEN` — this allows the push to cascade and trigger `auto-merge.yml`. GitHub suppresses workflow triggers for events caused by `GITHUB_TOKEN`. |
 
 ### 5. Orchestrator: create a GitHub issue
 
