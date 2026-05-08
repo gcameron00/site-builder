@@ -5568,8 +5568,11 @@ async function onRequestPost(context22) {
     const msg = err?.errors?.[0]?.message ?? "Unknown error";
     return json({ error: `Failed to create Cloudflare Pages project: ${msg}` }, 500);
   }
+  const cfData = await cfRes.json();
+  const subdomain = cfData?.result?.subdomain;
+  const siteUrl = subdomain ? `https://${subdomain}` : `https://${name}.pages.dev`;
   waitUntil(setupRepo({ owner, name, ghToken, anthropicKey, description }));
-  return json({ url: `https://${name}.pages.dev` });
+  return json({ url: siteUrl });
 }
 __name(onRequestPost, "onRequestPost");
 async function setupRepo({ owner, name, ghToken, anthropicKey, description }) {

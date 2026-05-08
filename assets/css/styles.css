@@ -5,6 +5,13 @@
   --color-muted: #64748b;
   --color-accent: #2563eb;
   --color-border: #e2e8f0;
+  --color-input-bg: #f8fafc;
+  --color-success-bg: #f0fdf4;
+  --color-success-text: #166534;
+  --color-success-border: #bbf7d0;
+  --color-error-bg: #fef2f2;
+  --color-error-text: #991b1b;
+  --color-error-border: #fecaca;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -14,17 +21,142 @@
     --color-muted: #94a3b8;
     --color-accent: #60a5fa;
     --color-border: #1e293b;
+    --color-input-bg: #1e293b;
+    --color-success-bg: #052e16;
+    --color-success-text: #86efac;
+    --color-success-border: #166534;
+    --color-error-bg: #450a0a;
+    --color-error-text: #fca5a5;
+    --color-error-border: #991b1b;
   }
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
 }
 
 body {
   font-family: system-ui, sans-serif;
-  margin: 2rem;
+  margin: 0;
+  padding: 2rem 1rem;
   background-color: var(--color-bg);
   color: var(--color-text);
+  line-height: 1.6;
+}
+
+main {
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.75rem;
+}
+
+.lead {
+  color: var(--color-muted);
+  margin: 0 0 2rem;
 }
 
 a {
-  text-decoration: none;
   color: var(--color-accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Form */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-bottom: 1.25rem;
+}
+
+label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+input,
+textarea {
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-input-bg);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 1rem;
+  width: 100%;
+}
+
+input:focus,
+textarea:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+textarea {
+  resize: vertical;
+}
+
+.hint {
+  font-size: 0.8rem;
+  color: var(--color-muted);
+}
+
+button[type="submit"] {
+  display: block;
+  width: 100%;
+  padding: 0.7rem 1rem;
+  background: var(--color-accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 0.5rem;
+}
+
+button[type="submit"]:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+button[type="submit"]:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Status messages */
+
+.status {
+  margin-top: 1.5rem;
+  padding: 0.875rem 1rem;
+  border-radius: 6px;
+  border: 1px solid;
+  font-size: 0.95rem;
+}
+
+.status--success {
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+  border-color: var(--color-success-border);
+}
+
+.status--error {
+  background: var(--color-error-bg);
+  color: var(--color-error-text);
+  border-color: var(--color-error-border);
+}
+
+.status a {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
 }

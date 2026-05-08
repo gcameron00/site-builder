@@ -4,14 +4,33 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="color-scheme" content="light dark" />
-    <title>Home</title>
+    <title>Site Builder</title>
     <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/assets/css/styles.css">
     <script defer src="/assets/js/main.js"></script>
   </head>
   <body>
-    <h1>It works 🎉</h1>
-    <p>This site is deployed using Cloudflare Pages.</p>
-    <p><a href="/about/">About</a></p>
+    <main>
+      <h1>Build a new site</h1>
+      <p class="lead">Describe your site and we'll set everything up. It'll be live at <strong>{name}.pages.dev</strong> within a few minutes.</p>
+
+      <form id="create-form">
+        <div class="field">
+          <label for="name">Project name</label>
+          <input type="text" id="name" name="name" placeholder="my-project" autocomplete="off" spellcheck="false" required />
+          <span class="hint">Lowercase letters, numbers, and hyphens only</span>
+        </div>
+
+        <div class="field">
+          <label for="description">Description</label>
+          <textarea id="description" name="description" rows="4" placeholder="A site about…" required></textarea>
+          <span class="hint">Claude will use this to write the initial content</span>
+        </div>
+
+        <button type="submit" id="submit-btn">Create site</button>
+      </form>
+
+      <div id="status" hidden></div>
+    </main>
   </body>
 </html>

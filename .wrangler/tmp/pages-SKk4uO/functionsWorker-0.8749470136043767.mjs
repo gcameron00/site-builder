@@ -4389,8 +4389,11 @@ async function onRequestPost(context2) {
     const msg = err?.errors?.[0]?.message ?? "Unknown error";
     return json({ error: `Failed to create Cloudflare Pages project: ${msg}` }, 500);
   }
+  const cfData = await cfRes.json();
+  const subdomain = cfData?.result?.subdomain;
+  const siteUrl = subdomain ? `https://${subdomain}` : `https://${name}.pages.dev`;
   waitUntil(setupRepo({ owner, name, ghToken, anthropicKey, description }));
-  return json({ url: `https://${name}.pages.dev` });
+  return json({ url: siteUrl });
 }
 async function setupRepo({ owner, name, ghToken, anthropicKey, description }) {
   const actionsRes = await fetch(
@@ -4513,13 +4516,13 @@ var init_functionsRoutes_0_734894146143894 = __esm({
   }
 });
 
-// ../.wrangler/tmp/bundle-OGESXZ/middleware-loader.entry.ts
+// ../.wrangler/tmp/bundle-5sIK0l/middleware-loader.entry.ts
 init_functionsRoutes_0_734894146143894();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
 init_performance2();
 
-// ../.wrangler/tmp/bundle-OGESXZ/middleware-insertion-facade.js
+// ../.wrangler/tmp/bundle-5sIK0l/middleware-insertion-facade.js
 init_functionsRoutes_0_734894146143894();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_process();
 init_virtual_unenv_global_polyfill_cloudflare_unenv_preset_node_console();
@@ -5030,7 +5033,7 @@ var jsonError = /* @__PURE__ */ __name(async (request, env2, _ctx, middlewareCtx
 }, "jsonError");
 var middleware_miniflare3_json_error_default = jsonError;
 
-// ../.wrangler/tmp/bundle-OGESXZ/middleware-insertion-facade.js
+// ../.wrangler/tmp/bundle-5sIK0l/middleware-insertion-facade.js
 var __INTERNAL_WRANGLER_MIDDLEWARE__ = [
   middleware_ensure_req_body_drained_default,
   middleware_miniflare3_json_error_default
@@ -5066,7 +5069,7 @@ function __facade_invoke__(request, env2, ctx, dispatch, finalMiddleware) {
 }
 __name(__facade_invoke__, "__facade_invoke__");
 
-// ../.wrangler/tmp/bundle-OGESXZ/middleware-loader.entry.ts
+// ../.wrangler/tmp/bundle-5sIK0l/middleware-loader.entry.ts
 var __Facade_ScheduledController__ = class ___Facade_ScheduledController__ {
   constructor(scheduledTime, cron, noRetry) {
     this.scheduledTime = scheduledTime;

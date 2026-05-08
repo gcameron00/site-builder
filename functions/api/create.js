@@ -71,12 +71,16 @@ export async function onRequestPost(context) {
     return json({ error: `Failed to create Cloudflare Pages project: ${msg}` }, 500);
   }
 
+  const cfData = await cfRes.json();
+  const subdomain = cfData?.result?.subdomain;
+  const siteUrl = subdomain ? `https://${subdomain}` : `https://${name}.pages.dev`;
+
   // Return the URL to the caller immediately.
   // Secrets and issue creation run in the background — they need the repo's
   // Actions API to be ready which can take 10–30s after template generation.
   waitUntil(setupRepo({ owner, name, ghToken, anthropicKey, description }));
 
-  return json({ url: `https://${name}.pages.dev` });
+  return json({ url: siteUrl });
 }
 
 async function setupRepo({ owner, name, ghToken, anthropicKey, description }) {
