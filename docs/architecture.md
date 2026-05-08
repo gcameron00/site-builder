@@ -21,7 +21,7 @@ POST /repos/{template_owner}/{template_repo}/generate
 ```
 Payload: `{ "name": "my-project", "private": false }`
 
-The new repo is created with the template contents including both GitHub Actions workflows.
+The new repo is created with the template contents including the `claude.yml` workflow.
 
 ### 3. Orchestrator: create Cloudflare Pages project
 
@@ -51,7 +51,7 @@ For each secret:
 | Secret | Value | Purpose |
 |---|---|---|
 | `ANTHROPIC_API_KEY` | Anthropic API key | Powers Claude Code |
-| `GH_PAT` | Same value as `GITHUB_TOKEN` | Passed to `claude-code-action` so Claude's git push uses a PAT rather than `GITHUB_TOKEN` — this allows the push to cascade and trigger `auto-merge.yml`. GitHub suppresses workflow triggers for events caused by `GITHUB_TOKEN`. |
+| `GH_PAT` | Personal access token with `repo` scope | Used by `claude-code-action` (passed via `github_token` input) and by the merge step to create and merge PRs — `GITHUB_TOKEN` cannot create PRs by default |
 
 ### 5. Orchestrator: create a GitHub issue
 
@@ -68,16 +68,24 @@ Payload:
 }
 ```
 
+The `enhancement` label is what gates the Claude trigger (see Security below).
+
 ### 6. Claude Code processes the issue
 
-The `claude.yml` workflow in the repo (copied from the template) is listening for new issues. It:
-- Runs the Claude Code GitHub Action
-- Claude reads the issue, edits the site files
-- Opens a pull request with the changes against main
+The `claude.yml` workflow triggers on the new issue. Claude Code:
+- Reads the issue
+- Edits the site files
+- Pushes the changes to a new branch (`claude/issue-N-YYYYMMDD-HHMM`)
+- Posts a comment on the issue containing a "Create PR" compare URL
 
-### 7. Auto-merge merges the PR
+### 7. `claude.yml` merge step creates and merges the PR
 
-The `auto-merge.yml` workflow triggers when a PR is opened by the Claude bot. It automatically merges the PR into main without requiring manual review.
+Immediately after the Claude Code step, the same workflow job runs a merge step that:
+1. Polls the issue comments (via GitHub API) for Claude's compare URL
+2. Extracts the branch name from the URL (`compare/main...claude/issue-N-*`)
+3. Creates a PR from that branch using `GH_PAT`
+4. Merges the PR and deletes the branch
+5. GitHub automatically closes the issue (the PR body contains `Closes #N`)
 
 ### 8. Cloudflare Pages deploys
 
@@ -95,12 +103,12 @@ The template repo (`gcameron00/generic-website`) must contain:
 
 | File | Purpose |
 |---|---|
-| `.github/workflows/claude.yml` | Standard Claude Code action — triggers on issues mentioning `@claude` |
-| `.github/workflows/auto-merge.yml` | Auto-merges PRs opened by the Claude bot |
+| `.github/workflows/claude.yml` | Triggers on issues with `@claude` + `enhancement` label; runs Claude Code then auto-merges the PR |
 | `index.html`, `about/index.html`, etc. | Base site files Claude Code will update |
 
 ### Security
-The template repo's issue creation is restricted to collaborators only (GitHub Settings → General → Issues). This prevents the Claude bot being triggered by arbitrary users opening issues on newly-created repos.
+
+The `enhancement` label gates the Claude trigger. Only collaborators can apply labels to issues, so arbitrary users cannot trigger Claude by opening issues on newly-created repos. The `enhancement` label is a GitHub default — it exists on every new repo with no extra setup needed.
 
 ---
 
@@ -120,6 +128,7 @@ An edge function running on Cloudflare's network. Has access to environment vari
 | `GITHUB_TEMPLATE_OWNER` | e.g. `gcameron00` |
 | `GITHUB_TEMPLATE_REPO` | e.g. `generic-website` |
 | `ANTHROPIC_API_KEY` | Set as secret on each new repo |
+| `GH_PAT` | Set as secret on each new repo (same PAT used by the orchestrator) |
 
 ---
 
@@ -134,6 +143,7 @@ An edge function running on Cloudflare's network. Has access to environment vari
 
 ## Known constraints
 
-- GitHub secrets require libsodium encryption — the orchestrator needs `libsodium-wrappers` (or equivalent) to encrypt the API key before storing it
+- GitHub secrets require libsodium encryption — the orchestrator needs `libsodium-wrappers` (or equivalent) to encrypt secrets before storing them
 - CF Pages project names follow the pattern: repo name lowercased, non-alphanumeric characters replaced by hyphens
-- The `enhancement` label is used to gate the Claude trigger — it's a GitHub default label present on every new repo, so no label creation is needed in the template or by the orchestrator
+- `GITHUB_TOKEN` cannot create PRs by default in GitHub Actions — `GH_PAT` is used instead for the merge step
+- A separate auto-merge workflow was explored but abandoned: GitHub suppresses Actions workflow triggers for events caused by `GITHUB_TOKEN`, so a separate workflow on `pull_request: opened` or `push` to `claude/**` branches would never fire reliably. The merge step runs within the same `claude.yml` job, avoiding cascade suppression entirely.

@@ -4,7 +4,7 @@ Build order matters — each phase can be tested independently before the next d
 
 ---
 
-## Phase 1 — Credentials and prerequisites
+## Phase 1 — Credentials and prerequisites ✅
 *Nothing else can be tested without these in place.*
 
 - [x] Create a GitHub Personal Access Token with `repo` scope (includes secrets management)
@@ -17,19 +17,20 @@ Build order matters — each phase can be tested independently before the next d
 
 ---
 
-## Phase 2 — Template repo setup (`generic-website`)
+## Phase 2 — Template repo setup (`generic-website`) ✅
 *Must be complete before any end-to-end testing.*
 
-- [x] Add `.github/workflows/claude.yml` — standard Claude Code action, triggers on issues mentioning `@claude`
-- [ ] Add `.github/workflows/auto-merge.yml` — auto-merges PRs opened by the Claude bot
-- [ ] Restrict issue creation to collaborators (Settings → General → Issues → "Collaborators and members")
+- [x] Add `.github/workflows/claude.yml` — triggers on issues mentioning `@claude` with the `enhancement` label; runs Claude Code, then auto-merges the resulting branch into main
+- [x] Security gate: use the `enhancement` label to restrict Claude triggering to collaborators only (only collaborators can apply labels; `enhancement` is a GitHub default so no label creation is needed)
+
+> **Note:** A separate `auto-merge.yml` workflow was explored but abandoned. GitHub suppresses Actions workflow triggers for events caused by `GITHUB_TOKEN`, making a separate merge workflow unreliable. The merge step now lives inside `claude.yml` itself: after Claude Code finishes it polls the issue comments for Claude's compare URL, extracts the branch name, creates a PR via `GH_PAT`, and merges it.
 
 **Test (manual):**
 1. Create a new repo from the `generic-website` template
-2. Add `ANTHROPIC_API_KEY` as a secret on the test repo
-3. Open an issue mentioning `@claude` with a site description
-4. Verify Claude Code opens a PR with updated content
-5. Verify the auto-merge workflow merges the PR automatically
+2. Add `ANTHROPIC_API_KEY` and `GH_PAT` as secrets on the test repo
+3. Open an issue with `@claude` in the body and the `enhancement` label applied
+4. Verify Claude Code pushes a branch and comments on the issue
+5. Verify the merge step creates a PR, merges it, and closes the issue
 
 **Dependency:** Phase 1 complete.
 
@@ -39,13 +40,14 @@ Build order matters — each phase can be tested independently before the next d
 *The backend the form POSTs to. Test with curl before building the UI.*
 
 - [ ] Create `functions/api/create.js`
-- [ ] Install `libsodium-wrappers` for encrypting the Anthropic API key before storing it as a GitHub secret
+- [ ] Install `libsodium-wrappers` for encrypting secrets before storing them via the GitHub API
 - [ ] On POST `{ name, description }`, in sequence:
   1. GitHub API: create repo from template
   2. Cloudflare API: create Pages project linked to new repo
   3. GitHub API: set `ANTHROPIC_API_KEY` secret on new repo (encrypt with repo's public key first)
-  4. GitHub API: create issue on new repo with `@claude` + description
-  5. Return `{ url: "https://{name}.pages.dev" }`
+  4. GitHub API: set `GH_PAT` secret on new repo (same value — used by claude.yml to create/merge PRs)
+  5. GitHub API: create issue on new repo with `@claude` + description + `enhancement` label
+  6. Return `{ url: "https://{name}.pages.dev" }`
 - [ ] Handle errors: duplicate repo name (422), duplicate CF Pages project name, secret encryption failure
 - [ ] Add `ANTHROPIC_API_KEY` to `.dev.vars` and to CF Pages dashboard secrets
 - [ ] Set all other env vars in CF Pages dashboard
@@ -57,7 +59,7 @@ curl -X POST http://localhost:8788/api/create \
   -H "Content-Type: application/json" \
   -d '{"name":"test-site","description":"A site about jazz music."}'
 ```
-Verify: repo created on GitHub, CF Pages project created, secret set, issue opened, Claude Code triggers.
+Verify: repo created on GitHub, CF Pages project created, both secrets set, issue opened, Claude Code triggers, PR created and merged automatically.
 
 **Dependency:** Phase 2 complete.
 
@@ -91,16 +93,11 @@ Verify: repo created on GitHub, CF Pages project created, secret set, issue open
 ```
 Phase 1 (credentials)
     ↓
-Phase 2 (template repo: claude.yml + auto-merge.yml + settings)  ← test: manual issue
+Phase 2 (template repo: claude.yml with merge step + enhancement label gate)  ← test: manual issue
     ↓
-Phase 3 (CF Pages Function orchestrator)                          ← test: curl
+Phase 3 (CF Pages Function orchestrator)                                        ← test: curl
     ↓
-Phase 4 (form UI)                                                 ← test: end-to-end browser
+Phase 4 (form UI)                                                               ← test: end-to-end browser
     ↓
 Phase 5 (polish)
 ```
-
-## What's done
-
-- Phase 1: complete
-- Phase 2: `claude.yml` added and tested successfully; `auto-merge.yml` and repo settings pending
