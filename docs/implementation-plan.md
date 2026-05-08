@@ -36,30 +36,25 @@ Build order matters — each phase can be tested independently before the next d
 
 ---
 
-## Phase 3 — Cloudflare Pages Function (orchestrator)
+## Phase 3 — Cloudflare Pages Function (orchestrator) ✅
 *The backend the form POSTs to. Test with curl before building the UI.*
 
-- [ ] Create `functions/api/create.js`
-- [ ] Install `libsodium-wrappers` for encrypting secrets before storing them via the GitHub API
-- [ ] On POST `{ name, description }`, in sequence:
+- [x] Create `functions/api/create.js`
+- [x] Install `tweetsodium` for encrypting secrets (pure JS, works in CF edge runtime — `libsodium-wrappers` was rejected at build time due to WASM file resolution issues)
+- [x] On POST `{ name, description }`, in sequence:
   1. GitHub API: create repo from template
-  2. Cloudflare API: create Pages project linked to new repo
-  3. GitHub API: set `ANTHROPIC_API_KEY` secret on new repo (encrypt with repo's public key first)
-  4. GitHub API: set `GH_PAT` secret on new repo (same value — used by claude.yml to create/merge PRs)
-  5. GitHub API: create issue on new repo with `@claude` + description + `enhancement` label
-  6. Return `{ url: "https://{name}.pages.dev" }`
-- [ ] Handle errors: duplicate repo name (422), duplicate CF Pages project name, secret encryption failure
-- [ ] Add `ANTHROPIC_API_KEY` to `.dev.vars` and to CF Pages dashboard secrets
-- [ ] Set all other env vars in CF Pages dashboard
+  2. Cloudflare API: create Pages project linked to new repo — return URL to caller immediately via `waitUntil`
+  3. GitHub API: enable Actions on the new repo (not auto-enabled for API-created repos)
+  4. GitHub API: set `ANTHROPIC_API_KEY` secret — retries until Actions secrets endpoint is ready
+  5. GitHub API: set `GH_PAT` secret
+  6. GitHub API: create issue with `@claude` + description + `enhancement` label
+- [x] Handle errors: duplicate repo name (422), secret encryption failure (non-fatal, logged)
+- [x] `ANTHROPIC_API_KEY` added to `.dev.vars`
 
-**Test locally:**
-```bash
-wrangler pages dev .
-curl -X POST http://localhost:8788/api/create \
-  -H "Content-Type: application/json" \
-  -d '{"name":"test-site","description":"A site about jazz music."}'
-```
-Verify: repo created on GitHub, CF Pages project created, both secrets set, issue opened, Claude Code triggers, PR created and merged automatically.
+> **Notes:**
+> - Correct secrets endpoint is `/actions/secrets/public-key` (not `/actions/public-key`)
+> - `waitUntil` is used so the URL is returned immediately; secrets + issue run in the background
+> - Actions must be explicitly enabled via `PUT /repos/{owner}/{repo}/actions/permissions` before the secrets API becomes available
 
 **Dependency:** Phase 2 complete.
 
