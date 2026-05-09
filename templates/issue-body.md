@@ -2,4 +2,8 @@
 
 {{description}}
 
-Update index.html with a fitting title, headline, and introductory content. Update about/index.html with relevant background. Keep the existing HTML structure and CSS — only change the content.
+It will be hosted on Cloudflare pages and is mostly static html, js, css, no framework. First document the project in readme.md, About page and any other docs that make sense.
+
+Then make an implementation plan for the build out.
+
+Go ahead and build a proposed front end.
