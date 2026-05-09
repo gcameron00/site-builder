@@ -1,0 +1,136 @@
+{
+  "wallTime": 4373,
+  "cpuTime": 5,
+  "truncated": false,
+  "executionModel": "stateless",
+  "outcome": "ok",
+  "scriptVersion": {
+    "id": "5ab145dc-0d1b-453e-9094-f53796062992"
+  },
+  "scriptName": "pages-worker--13416928-production",
+  "diagnosticsChannelEvents": [],
+  "exceptions": [],
+  "logs": [
+    {
+      "message": [
+        "Actions permissions: 204"
+      ],
+      "level": "log",
+      "timestamp": 1778318167896
+    },
+    {
+      "message": [
+        "Failed to set repo secrets:",
+        "The first argument must be of type string or an instance of Buffer, TypedArray, ArrayBuffer, SharedArrayBuffer, or Array or an Array-like Object. Received undefined"
+      ],
+      "level": "error",
+      "timestamp": 1778318168062
+    }
+  ],
+  "eventTimestamp": 1778318163667,
+  "event": {
+    "request": {
+      "url": "https://site-builder-5qe.pages.dev/api/create",
+      "method": "POST",
+      "headers": {
+        "accept": "*/*",
+        "accept-encoding": "gzip, br",
+        "accept-language": "en-GB,en;q=0.9",
+        "cf-connecting-ip": "2a09:bac2:1e47:246e::3a1:75",
+        "cf-ipcountry": "CH",
+        "cf-ray": "9f8f9a6adfadd3c2",
+        "cf-visitor": "{\"scheme\":\"https\"}",
+        "connection": "Keep-Alive",
+        "content-length": "110",
+        "content-type": "application/json",
+        "host": "site-builder-5qe.pages.dev",
+        "origin": "https://site-builder-5qe.pages.dev",
+        "priority": "u=3, i",
+        "referer": "https://site-builder-5qe.pages.dev/",
+        "sec-fetch-dest": "empty",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-site": "same-origin",
+        "user-agent": "Mozilla/5.0 (iPad; CPU OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.4 Mobile/15E148 Safari/604.1",
+        "x-forwarded-proto": "https",
+        "x-real-ip": "2a09:bac2:1e47:246e::3a1:75"
+      },
+      "cf": {
+        "httpProtocol": "HTTP/3",
+        "clientAcceptEncoding": "gzip, deflate, br",
+        "requestPriority": "",
+        "edgeRequestKeepAliveStatus": 1,
+        "requestHeaderNames": {},
+        "clientTcpRtt": 0,
+        "clientQuicRtt": 22,
+        "colo": "FRA",
+        "asn": 13335,
+        "asOrganization": "Cloudflare London, LLC",
+        "country": "CH",
+        "isEUCountry": false,
+        "city": "Fiesch",
+        "continent": "EU",
+        "region": "Valais",
+        "regionCode": "VS",
+        "timezone": "Europe/Zurich",
+        "longitude": "8.13533",
+        "latitude": "46.39981",
+        "postalCode": "3984",
+        "tlsVersion": "TLSv1.3",
+        "tlsCipher": "AEAD-AES256-GCM-SHA384",
+        "tlsClientRandom": "ph8PRtYou5GQAWa543qB1rBCEf0L3+cZMztYRftRNA8=",
+        "tlsClientCiphersSha1": "r41uzXJdxMO1kG5HoXGHJSNyElw=",
+        "tlsClientExtensionsSha1": "wCaybNo3F12Q4OOH7BV5qQ3Z2Pk=",
+        "tlsClientExtensionsSha1Le": "9e4qFvedsDMqu1S79MvgCjrsVy0=",
+        "tlsExportedAuthenticator": {
+          "clientHandshake": "e2b42537566e7a031de0dcf8bf299ed06d1c0c71f019e74b6fcde2d6d16e6757009de613ae678667bfd069d236f9e6f9",
+          "serverHandshake": "4329e6372c8340e9500029194ec42fd5f10a6d598e075e17de8237b89d83b7e6ea30bedba2bd22e001ef33bb852e9018",
+          "clientFinished": "1265b68fba9857a89b39371c308202d7fc75905ff780865b55029984688e12490e0c34adb6fdf703202cdef5bc8cb015",
+          "serverFinished": "8a4fe3a6d992adbe486d512f5a384f716c0ff4cecc93a1fa6bc54459fd924786544bc06d6ef022bbbce91daf0a862b84"
+        },
+        "tlsClientHelloLength": "1766",
+        "tlsClientAuth": {
+          "certPresented": "0",
+          "certVerified": "NONE",
+          "certRevoked": "0",
+          "certIssuerDN": "",
+          "certSubjectDN": "",
+          "certIssuerDNRFC2253": "",
+          "certSubjectDNRFC2253": "",
+          "certIssuerDNLegacy": "",
+          "certSubjectDNLegacy": "",
+          "certSerial": "",
+          "certIssuerSerial": "",
+          "certSKI": "",
+          "certIssuerSKI": "",
+          "certFingerprintSHA1": "",
+          "certFingerprintSHA256": "",
+          "certNotBefore": "",
+          "certNotAfter": "",
+          "certRFC9440": "",
+          "certRFC9440TooLarge": false,
+          "certChainRFC9440": "",
+          "certChainRFC9440TooLarge": false
+        },
+        "verifiedBotCategory": "",
+        "edgeL4": {
+          "deliveryRate": 54150
+        },
+        "pagesHostName": "site-builder-5qe.pages.dev",
+        "botManagement": {
+          "corporateProxy": false,
+          "verifiedBot": false,
+          "jsDetection": {
+            "passed": false
+          },
+          "staticResource": false,
+          "detectionIds": {},
+          "score": 99
+        }
+      }
+    },
+    "response": {
+      "status": 200
+    }
+  },
+  "id": 0
+}
