@@ -15,6 +15,7 @@ build/
 # Wrangler local state and logs
 .wrangler/
 *.log
+*.output
 
 # Local secrets — never commit
 .dev.vars
