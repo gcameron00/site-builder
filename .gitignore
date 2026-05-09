@@ -12,5 +12,9 @@ build/
 # Editor settings
 .vscode/
 
+# Wrangler local state and logs
+.wrangler/
+*.log
+
 # Local secrets — never commit
 .dev.vars

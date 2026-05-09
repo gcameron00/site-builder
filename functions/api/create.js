@@ -75,15 +75,31 @@ export async function onRequestPost(context) {
   const subdomain = cfData?.result?.subdomain;
   const siteUrl = subdomain ? `https://${subdomain}` : `https://${name}.pages.dev`;
 
+  // Render the issue body from the template file
+  const issueBody = await renderIssueBody(env.ASSETS, request.url, description);
+
   // Return the URL to the caller immediately.
   // Secrets and issue creation run in the background — they need the repo's
   // Actions API to be ready which can take 10–30s after template generation.
-  waitUntil(setupRepo({ owner, name, ghToken, anthropicKey, description }));
+  waitUntil(setupRepo({ owner, name, ghToken, anthropicKey, issueBody }));
 
   return json({ url: siteUrl });
 }
 
-async function setupRepo({ owner, name, ghToken, anthropicKey, description }) {
+async function renderIssueBody(assets, requestUrl, description) {
+  const fallback = `@claude Please build out this website. The project description is:\n\n${description}\n\nUpdate index.html with a fitting title, headline, and introductory content. Update about/index.html with relevant background. Keep the existing HTML structure and CSS — only change the content.`;
+  try {
+    const url = new URL('/templates/issue-body.md', requestUrl);
+    const res = await assets.fetch(new Request(url.toString()));
+    if (!res.ok) return fallback;
+    const template = await res.text();
+    return template.replace('{{description}}', description);
+  } catch {
+    return fallback;
+  }
+}
+
+async function setupRepo({ owner, name, ghToken, anthropicKey, issueBody }) {
   // GitHub doesn't auto-enable Actions on repos created via API — do it explicitly
   const actionsRes = await fetch(
     `https://api.github.com/repos/${owner}/${name}/actions/permissions`,
@@ -110,7 +126,7 @@ async function setupRepo({ owner, name, ghToken, anthropicKey, description }) {
       headers: githubHeaders(ghToken),
       body: JSON.stringify({
         title: 'Initial site build',
-        body: `@claude Please build out this website. The project description is:\n\n${description}\n\nUpdate index.html with a fitting title, headline, and introductory content. Update about/index.html with relevant background. Keep the existing HTML structure and CSS — only change the content.`,
+        body: issueBody,
         labels: ['enhancement'],
       }),
     }
