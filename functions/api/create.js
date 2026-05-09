@@ -100,6 +100,8 @@ async function renderIssueBody(assets, requestUrl, description) {
 }
 
 async function setupRepo({ owner, name, ghToken, anthropicKey, issueBody }) {
+  console.log(`[setupRepo] start — repo: ${owner}/${name}`);
+
   // GitHub doesn't auto-enable Actions on repos created via API — do it explicitly
   const actionsRes = await fetch(
     `https://api.github.com/repos/${owner}/${name}/actions/permissions`,
@@ -109,15 +111,17 @@ async function setupRepo({ owner, name, ghToken, anthropicKey, issueBody }) {
       body: JSON.stringify({ enabled: true, allowed_actions: 'all' }),
     }
   );
-  console.log(`Actions permissions: ${actionsRes.status}`);
+  console.log(`[setupRepo] Actions permissions: ${actionsRes.status}`);
 
   try {
     await setRepoSecret(owner, name, ghToken, 'ANTHROPIC_API_KEY', anthropicKey);
     await setRepoSecret(owner, name, ghToken, 'GH_PAT', ghToken);
   } catch (err) {
-    console.error('Failed to set repo secrets:', err.message);
+    console.error(`[setupRepo] Failed to set repo secrets: ${err.message}`);
     return;
   }
+
+  console.log(`[setupRepo] secrets set — creating issue`);
 
   const issueRes = await fetch(
     `https://api.github.com/repos/${owner}/${name}/issues`,
@@ -133,7 +137,9 @@ async function setupRepo({ owner, name, ghToken, anthropicKey, issueBody }) {
   );
 
   if (!issueRes.ok) {
-    console.error('Failed to create issue:', await issueRes.text());
+    console.error(`[setupRepo] Failed to create issue: ${await issueRes.text()}`);
+  } else {
+    console.log(`[setupRepo] issue created — done`);
   }
 }
 
