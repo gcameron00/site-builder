@@ -5,7 +5,6 @@ Build order matters — each phase can be tested independently before the next d
 ---
 
 ## Phase 1 — Credentials and prerequisites ✅
-*Nothing else can be tested without these in place.*
 
 - [x] Create a GitHub Personal Access Token with `repo` scope (includes secrets management)
 - [x] Create a Cloudflare API Token with Pages write permissions
@@ -13,73 +12,51 @@ Build order matters — each phase can be tested independently before the next d
 - [x] Confirm you have an Anthropic API key
 - [x] Identify the GitHub template repo (`gcameron00/generic-website`)
 
-**Output:** Five values in `.dev.vars` — `GITHUB_TOKEN`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `GITHUB_TEMPLATE_OWNER`, `GITHUB_TEMPLATE_REPO`. Plus `ANTHROPIC_API_KEY` for use in Phase 3.
+**Output:** Six values in `.dev.vars` — `GITHUB_TOKEN`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `GITHUB_TEMPLATE_OWNER`, `GITHUB_TEMPLATE_REPO`, `ANTHROPIC_API_KEY`. All except `GITHUB_TOKEN` also set as CF Pages production secrets.
 
 ---
 
 ## Phase 2 — Template repo setup (`generic-website`) ✅
-*Must be complete before any end-to-end testing.*
 
-- [x] Add `.github/workflows/claude.yml` — triggers on issues mentioning `@claude` with the `enhancement` label; runs Claude Code, then auto-merges the resulting branch into main
-- [x] Security gate: use the `enhancement` label to restrict Claude triggering to collaborators only (only collaborators can apply labels; `enhancement` is a GitHub default so no label creation is needed)
+- [x] `.github/workflows/claude.yml` — triggers on issues with `@claude` + `enhancement` label; runs Claude Code then auto-merges the resulting PR
+- [x] Security gate: `enhancement` label (collaborators-only) prevents arbitrary users triggering Claude
 
-> **Note:** A separate `auto-merge.yml` workflow was explored but abandoned. GitHub suppresses Actions workflow triggers for events caused by `GITHUB_TOKEN`, making a separate merge workflow unreliable. The merge step now lives inside `claude.yml` itself: after Claude Code finishes it polls the issue comments for Claude's compare URL, extracts the branch name, creates a PR via `GH_PAT`, and merges it.
-
-**Test (manual):**
-1. Create a new repo from the `generic-website` template
-2. Add `ANTHROPIC_API_KEY` and `GH_PAT` as secrets on the test repo
-3. Open an issue with `@claude` in the body and the `enhancement` label applied
-4. Verify Claude Code pushes a branch and comments on the issue
-5. Verify the merge step creates a PR, merges it, and closes the issue
-
-**Dependency:** Phase 1 complete.
+> **Note:** A separate `auto-merge.yml` was explored and abandoned — GitHub suppresses Actions triggers for events caused by `GITHUB_TOKEN`. The merge step lives inside `claude.yml` itself: polls issue comments for Claude's compare URL, creates a PR via `GH_PAT`, merges it, and the issue auto-closes via `Closes #N` in the PR body.
 
 ---
 
 ## Phase 3 — Cloudflare Pages Function (orchestrator) ✅
-*The backend the form POSTs to. Test with curl before building the UI.*
 
-- [x] Create `functions/api/create.js`
-- [x] Install `tweetsodium` for encrypting secrets (pure JS, works in CF edge runtime — `libsodium-wrappers` was rejected at build time due to WASM file resolution issues)
-- [x] On POST `{ name, description }`, in sequence:
-  1. GitHub API: create repo from template
-  2. Cloudflare API: create Pages project linked to new repo — return URL to caller immediately via `waitUntil`
-  3. GitHub API: enable Actions on the new repo (not auto-enabled for API-created repos)
-  4. GitHub API: set `ANTHROPIC_API_KEY` secret — retries until Actions secrets endpoint is ready
-  5. GitHub API: set `GH_PAT` secret
-  6. GitHub API: create issue with `@claude` + description + `enhancement` label
-- [x] Handle errors: duplicate repo name (422), secret encryption failure (non-fatal, logged)
-- [x] `ANTHROPIC_API_KEY` added to `.dev.vars`
+- [x] `functions/api/create.js` — POST `{ name, description }` triggers the full setup sequence
+- [x] `tweetsodium` for secret encryption (pure JS; `libsodium-wrappers` rejected at build due to WASM resolution)
+- [x] Sequence: create GitHub repo → create CF Pages project → return URL → (background) enable Actions → set secrets → open issue
+- [x] CF Pages actual subdomain read from API response (handles name conflicts e.g. `name-7gx.pages.dev`)
+- [x] Issue body externalised to `templates/issue-body.md` with `{{description}}` placeholder
+- [x] All env vars set in CF Pages dashboard as production secrets
 
 > **Notes:**
-> - Correct secrets endpoint is `/actions/secrets/public-key` (not `/actions/public-key`)
-> - `waitUntil` is used so the URL is returned immediately; secrets + issue run in the background
-> - Actions must be explicitly enabled via `PUT /repos/{owner}/{repo}/actions/permissions` before the secrets API becomes available
-
-**Dependency:** Phase 2 complete.
+> - Secrets endpoint is `/actions/secrets/public-key` (not `/actions/public-key`)
+> - `waitUntil` returns the URL immediately; background work retries the secrets endpoint up to 10× until Actions is ready
+> - Actions must be explicitly enabled via `PUT /repos/{owner}/{repo}/actions/permissions` — not auto-enabled for API-created repos
+> - `ANTHROPIC_API_KEY` must be set as a CF Pages production secret (not just `.dev.vars`) — missing this was the root cause of the first production failure
 
 ---
 
-## Phase 4 — Form UI
-*Built last — the function is already proven to work.*
+## Phase 4 — Form UI ✅
 
-- [ ] Update `index.html` with the form: project name field, description textarea, submit button
-- [ ] `main.js` handles submit: POST to `/api/create`, show loading state during request
-- [ ] On success: display the `.pages.dev` URL as a clickable link with a note that content will appear within a few minutes
-- [ ] On error: clear message (e.g. "that project name is already taken")
-
-**Test:** Submit the form end-to-end. Verify repo, CF Pages project, issue, PR, auto-merge, and live site all work in sequence.
-
-**Dependency:** Phase 3 complete.
+- [x] `index.html` — project name input, description textarea, submit button
+- [x] `main.js` — POSTs to `/api/create`, loading state, success URL link, error messages
+- [x] Client-side name validation (lowercase, alphanumeric + hyphens, no leading/trailing hyphens)
+- [x] Double-submit prevention while request is in flight
+- [x] Success state shows actual CF Pages URL returned by the API
 
 ---
 
 ## Phase 5 — Polish and edge cases
 
-- [ ] Client-side validation: project name must be lowercase, alphanumeric + hyphens, no leading/trailing hyphens
-- [ ] Prevent double-submit while request is in flight
-- [ ] Consider a status note: "Your site is being built — it will be live at {url} in about 2 minutes"
-- [ ] Update `about/index.html` if anything changed during the build
+- [ ] Update `about/index.html` to describe the site-builder itself
+- [ ] Consider rate limiting or abuse prevention on `/api/create`
+- [ ] Handle CF Pages project name conflicts explicitly (surface the actual URL if CF renames it)
 
 ---
 
@@ -88,11 +65,11 @@ Build order matters — each phase can be tested independently before the next d
 ```
 Phase 1 (credentials)
     ↓
-Phase 2 (template repo: claude.yml with merge step + enhancement label gate)  ← test: manual issue
+Phase 2 (template repo: claude.yml with merge step + enhancement label gate)
     ↓
-Phase 3 (CF Pages Function orchestrator)                                        ← test: curl
+Phase 3 (CF Pages Function orchestrator)
     ↓
-Phase 4 (form UI)                                                               ← test: end-to-end browser
+Phase 4 (form UI)                         ← end-to-end working ✅
     ↓
 Phase 5 (polish)
 ```
